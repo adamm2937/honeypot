@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HoneyNet — Attacker Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #080a06;
+  --surface:  #0d120a;
+  --card:     #111a0e;
+  --border:   #1e3018;
+  --amber:    #ffb700;
+  --amber2:   #ff8c00;
+  --green:    #39ff14;
+  --red:      #ff2d55;
+  --critical: #ff0040;
+  --blue:     #00d4ff;
+  --text:     #c8d4b8;
+  --muted:    #4a6040;
+  --mono:     'Share Tech Mono', monospace;
+  --display:  'Orbitron', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  min-height: 100vh;
+  cursor: crosshair;
+}
+
+/* scanline effect */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none; z-index: 100;
+}
+
+/* grid */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(57,255,20,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57,255,20,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none; z-index: 0;
+}
+
+.wrap { position: relative; z-index: 1; max-width: 1500px; margin: 0 auto; padding: 0 20px 48px; }
+
+/* ── header ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.logo-text {
+  font-family: var(--display);
+  font-size: 22px; font-weight: 900;
+  color: var(--amber);
+  letter-spacing: 4px;
+  text-shadow: 0 0 20px rgba(255,183,0,0.4);
+}
+.logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 3px; margin-top: 3px; }
+
+.header-right { display: flex; align-items: center; gap: 24px; }
+
+.status-badge {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--display); font-size: 10px; letter-spacing: 2px;
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 2s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+#clock { color: var(--amber); font-size: 12px; opacity: 0.8; }
+
+/* ── stat row ── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 18px;
+  position: relative; overflow: hidden;
+}
+.stat::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,183,0,0.03), transparent);
+}
+.stat-label {
+  font-size: 9px; color: var(--muted); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.stat-value {
+  font-family: var(--display); font-size: 32px; font-weight: 900;
+  color: var(--amber); line-height: 1;
+  text-shadow: 0 0 12px rgba(255,183,0,0.3);
+}
+.stat-value.green   { color: var(--green);    text-shadow: 0 0 12px rgba(57,255,20,0.3); }
+.stat-value.red     { color: var(--red);      text-shadow: 0 0 12px rgba(255,45,85,0.3); }
+.stat-value.blue    { color: var(--blue);     text-shadow: 0 0 12px rgba(0,212,255,0.3); }
+.stat-value.critical{ color: var(--critical); text-shadow: 0 0 12px rgba(255,0,64,0.3); }
+.stat-sub { font-size: 9px; color: var(--muted); margin-top: 4px; }
+
+/* ── main grid ── */
+.grid-main { display: grid; grid-template-columns: 1fr 1fr 340px; gap: 16px; margin-bottom: 16px; }
+.grid-bot  { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ── panel ── */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,183,0,0.03);
+}
+.panel-title {
+  font-family: var(--display); font-size: 10px; font-weight: 700;
+  color: var(--amber); letter-spacing: 2px;
+}
+.panel-meta { font-size: 10px; color: var(--muted); }
+
+/* ── capture feed ── */
+.feed { max-height: 380px; overflow-y: auto; }
+.feed::-webkit-scrollbar { width: 3px; }
+.feed::-webkit-scrollbar-thumb { background: var(--border); }
+
+.cap-item {
+  display: grid; grid-template-columns: 70px 1fr auto;
+  gap: 10px; align-items: start;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(30,48,24,0.6);
+  animation: fadeIn .25s ease;
+  transition: background .15s;
+}
+.cap-item:hover { background: rgba(255,183,0,0.03); }
+@keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; } }
+
+.sev {
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  padding: 3px 6px; border-radius: 2px;
+  text-transform: uppercase; white-space: nowrap; margin-top: 1px;
+  font-family: var(--display);
+}
+.sev-critical { background: rgba(255,0,64,0.15);   color: var(--critical); border: 1px solid rgba(255,0,64,0.3); }
+.sev-high     { background: rgba(255,45,85,0.12);  color: var(--red);      border: 1px solid rgba(255,45,85,0.25); }
+.sev-medium   { background: rgba(255,140,0,0.12);  color: var(--amber2);   border: 1px solid rgba(255,140,0,0.25); }
+.sev-low      { background: rgba(57,255,20,0.08);  color: var(--green);    border: 1px solid rgba(57,255,20,0.2); }
+.sev-info     { background: rgba(0,212,255,0.08);  color: var(--blue);     border: 1px solid rgba(0,212,255,0.15); }
+
+.cap-body { min-width: 0; }
+.cap-type { color: var(--amber); font-size: 12px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap-ip   { color: var(--green); font-size: 11px; }
+.cap-detail { color: var(--muted); font-size: 10px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cap-time { color: var(--muted); font-size: 10px; text-align: right; white-space: nowrap; }
+.cap-trap { font-size: 9px; color: var(--muted); text-align: right; font-family: var(--display); }
+
+/* ── attacker table ── */
+.atk-table { width: 100%; border-collapse: collapse; }
+.atk-table th {
+  font-size: 9px; color: var(--muted); letter-spacing: 1px;
+  text-transform: uppercase; text-align: left;
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+  font-family: var(--display); font-weight: 400;
+}
+.atk-table td { padding: 8px 12px; border-bottom: 1px solid rgba(30,48,24,0.4); font-size: 11px; }
+.atk-table tr:hover td { background: rgba(255,183,0,0.02); }
+.score-bar {
+  display: flex; align-items: center; gap: 8px;
+}
+.score-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.score-fill  { height: 100%; border-radius: 2px; transition: width .4s; }
+.ip-cell { color: var(--green); font-family: var(--mono); }
+.cat-cell { color: var(--amber2); font-size: 10px; }
+.country-flag { font-size: 14px; }
+
+/* ── trap breakdown bars ── */
+.trap-bars { padding: 14px 16px; }
+.trap-row  { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.trap-label { width: 70px; font-size: 10px; color: var(--amber); font-family: var(--display); letter-spacing: 1px; }
+.trap-track { flex: 1; height: 8px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.trap-fill  { height: 100%; border-radius: 2px; background: var(--amber); transition: width .5s; }
+.trap-count { width: 40px; text-align: right; font-size: 11px; color: var(--text); }
+
+/* ── geo map placeholder ── */
+.geo-list { padding: 12px 16px; max-height: 200px; overflow-y: auto; }
+.geo-row  { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(30,48,24,0.4); }
+.geo-flag { font-size: 16px; width: 24px; }
+.geo-country { flex: 1; font-size: 11px; color: var(--text); }
+.geo-count  { font-family: var(--display); font-size: 10px; color: var(--amber); }
+
+/* ── event type list ── */
+.etype-list { padding: 12px 16px; }
+.etype-row  { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.etype-name { flex: 1; font-size: 10px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.etype-bar-track { width: 80px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.etype-bar-fill  { height: 100%; background: var(--green); border-radius: 2px; transition: width .5s; }
+.etype-count { font-size: 10px; color: var(--green); width: 28px; text-align: right; }
+
+/* ── empty / terminal ── */
+.terminal {
+  padding: 20px 16px; font-size: 11px; color: var(--muted);
+  max-height: 180px; overflow-y: auto;
+}
+.terminal::-webkit-scrollbar { width: 3px; }
+.t-line { margin-bottom: 3px; }
+.t-line .prompt { color: var(--amber); }
+.t-line .val    { color: var(--green); }
+
+.empty { padding: 30px; text-align: center; color: var(--muted); font-size: 11px; }
+
+footer {
+  margin-top: 32px; padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between;
+  color: var(--muted); font-size: 10px; letter-spacing: 1px;
+}
+
+@media (max-width: 1100px) {
+  .stats-row { grid-template-columns: repeat(3, 1fr); }
+  .grid-main { grid-template-columns: 1fr 360px; }
+  .grid-bot  { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <div class="logo-text">HONEYNET</div>
+    <div class="logo-sub">ATTACKER INTELLIGENCE PLATFORM</div>
+  </div>
+  <div class="header-right">
+    <div class="status-badge">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-label" style="color:var(--green)">ACTIVE</span>
+    </div>
+    <div id="clock"></div>
+  </div>
+</header>
+
+<!-- stats -->
+<div class="stats-row">
+  <div class="stat">
+    <div class="stat-label">Total Captures</div>
+    <div class="stat-value" id="s-total">—</div>
+    <div class="stat-sub">all traps combined</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Unique Attackers</div>
+    <div class="stat-value blue" id="s-ips">—</div>
+    <div class="stat-sub">distinct source IPs</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">High / Critical</div>
+    <div class="stat-value critical" id="s-high">—</div>
+    <div class="stat-sub">immediate threats</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Countries</div>
+    <div class="stat-value green" id="s-countries">—</div>
+    <div class="stat-sub">attacker origins</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Active Traps</div>
+    <div class="stat-value" id="s-traps">—</div>
+    <div class="stat-sub">SSH · HTTP · TCP</div>
+  </div>
+</div>
+
+<!-- main grid -->
+<div class="grid-main">
+
+  <!-- capture feed -->
+  <div class="panel" style="grid-column: span 1">
+    <div class="panel-header">
+      <div class="panel-title">⬡ CAPTURE FEED</div>
+      <div class="panel-meta" id="feed-count">0 captures</div>
+    </div>
+    <div class="feed" id="capture-feed">
+      <div class="empty">Traps armed — waiting for contact…</div>
+    </div>
+  </div>
+
+  <!-- attacker intel table -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">◈ ATTACKER PROFILES</div>
+      <div class="panel-meta">top by threat score</div>
+    </div>
+    <div style="overflow-x:auto; max-height:380px; overflow-y:auto;">
+      <table class="atk-table">
+        <thead>
+          <tr>
+            <th>IP</th>
+            <th>Origin</th>
+            <th>Category</th>
+            <th>Hits</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody id="atk-tbody">
+          <tr><td colspan="5" class="empty">No profiled attackers yet</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- right column -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- trap breakdown -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">▣ TRAPS</div>
+      </div>
+      <div class="trap-bars" id="trap-bars">
+        <div class="empty" style="padding:10px 0">No data yet</div>
+      </div>
+    </div>
+
+    <!-- severity -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">▲ SEVERITY</div>
+      </div>
+      <div class="trap-bars" id="sev-bars">
+        <div class="empty" style="padding:10px 0">No data yet</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- bottom grid -->
+<div class="grid-bot">
+
+  <!-- geo origins -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">◎ GEO ORIGINS</div>
+      <div class="panel-meta">attacker countries</div>
+    </div>
+    <div class="geo-list" id="geo-list">
+      <div class="empty">Geolocation pending…</div>
+    </div>
+  </div>
+
+  <!-- event types -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">⬡ EVENT TYPES</div>
+      <div class="panel-meta">what attackers are doing</div>
+    </div>
+    <div class="etype-list" id="etype-list">
+      <div class="empty">No events yet</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span>HoneyNet · Python + asyncio + aiohttp + Flask · MIT</span>
+  <span>Refreshes every 4s · ip-api.com geolocation</span>
+</footer>
+
+</div>
+
+<script>
+// ── clock ─────────────────────────────────────────────────────────────────────
+function tickClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.getElementById('clock').textContent =
+    `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} `+
+    `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} (${tz})`;
+}
+tickClock(); setInterval(tickClock, 1000);
+
+// ── status ────────────────────────────────────────────────────────────────────
+let online = true;
+function setStatus(on) {
+  if (online === on) return;
+  online = on;
+  const dot = document.getElementById('status-dot');
+  const lbl = document.getElementById('status-label');
+  dot.style.background   = on ? 'var(--green)' : 'var(--red)';
+  dot.style.boxShadow    = on ? '0 0 8px var(--green)' : '0 0 8px var(--red)';
+  dot.style.animation    = on ? 'blink 2s step-end infinite' : 'none';
+  lbl.textContent        = on ? 'ACTIVE' : 'OFFLINE';
+  lbl.style.color        = on ? 'var(--green)' : 'var(--red)';
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+function ago(ts) {
+  const d = (Date.now() - new Date(ts).getTime()) / 1000;
+  if (d < 60)   return `${Math.floor(d)}s ago`;
+  if (d < 3600) return `${Math.floor(d/60)}m ago`;
+  return `${Math.floor(d/3600)}h ago`;
+}
+
+function scoreColor(s) {
+  if (s >= 80) return '#ff0040';
+  if (s >= 60) return '#ff2d55';
+  if (s >= 40) return '#ff8c00';
+  if (s >= 20) return '#ffb700';
+  return '#39ff14';
+}
+
+function sevClass(s) { return `sev-${s}`; }
+
+function capDetail(cap) {
+  const d = cap.data || {};
+  if (d.username) return `user: ${d.username}  pw: ${d.password || '?'}`;
+  if (d.path)     return `path: ${d.path}`;
+  if (d.service)  return `service: ${d.service} port ${cap.trap_port}`;
+  if (d.raw_text) return d.raw_text.slice(0,60);
+  return cap.event_type;
+}
+
+// ── render capture feed ───────────────────────────────────────────────────────
+let seenIds = new Set();
+
+function renderFeed(captures) {
+  const el    = document.getElementById('capture-feed');
+  const badge = document.getElementById('feed-count');
+  badge.textContent = `${captures.length} captures`;
+
+  if (!captures.length) {
+    el.innerHTML = '<div class="empty">Traps armed — waiting for contact…</div>';
+    return;
+  }
+
+  const newOnes = captures.filter(c => !seenIds.has(c.id));
+  newOnes.forEach(c => seenIds.add(c.id));
+  if (!newOnes.length) return;
+
+  el.innerHTML = captures.slice(0, 80).map(c => `
+    <div class="cap-item">
+      <div class="${sevClass(c.severity)} sev">${c.severity}</div>
+      <div class="cap-body">
+        <div class="cap-type">${c.event_type.replace(/_/g,' ')}</div>
+        <div class="cap-ip">${c.src_ip}</div>
+        <div class="cap-detail">${capDetail(c)}</div>
+      </div>
+      <div>
+        <div class="cap-trap">[${c.trap_type.toUpperCase()}]</div>
+        <div class="cap-time">${ago(c.timestamp)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── render attacker table ─────────────────────────────────────────────────────
+function renderAttackers(attackers) {
+  const tbody = document.getElementById('atk-tbody');
+  if (!attackers.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">No profiled attackers yet</td></tr>';
+    return;
+  }
+  tbody.innerHTML = attackers.slice(0,15).map(a => {
+    const geo   = a.geo || {};
+    const flag  = geo.countryCode ? countryFlag(geo.countryCode) : '🌐';
+    const color = scoreColor(a.score);
+    return `
+      <tr>
+        <td class="ip-cell">${a.ip}</td>
+        <td><span class="country-flag">${flag}</span> ${geo.country || '?'}</td>
+        <td class="cat-cell">${a.category || '?'}</td>
+        <td style="color:var(--amber)">${a.total_hits}</td>
+        <td>
+          <div class="score-bar">
+            <div class="score-track">
+              <div class="score-fill" style="width:${a.score}%;background:${color}"></div>
+            </div>
+            <span style="color:${color};font-size:10px;width:28px">${a.score}</span>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function countryFlag(code) {
+  if (!code || code.length !== 2) return '🌐';
+  return String.fromCodePoint(...[...code.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+}
+
+// ── render trap bars ──────────────────────────────────────────────────────────
+function renderTrapBars(byTrap) {
+  const el  = document.getElementById('trap-bars');
+  const max = Math.max(1, ...Object.values(byTrap));
+  if (!Object.keys(byTrap).length) {
+    el.innerHTML = '<div class="empty" style="padding:10px 0">No data yet</div>';
+    return;
+  }
+  el.innerHTML = Object.entries(byTrap)
+    .sort((a,b) => b[1]-a[1])
+    .map(([t,n]) => `
+      <div class="trap-row">
+        <div class="trap-label">${t.toUpperCase()}</div>
+        <div class="trap-track"><div class="trap-fill" style="width:${Math.round(n/max*100)}%"></div></div>
+        <div class="trap-count">${n}</div>
+      </div>`).join('');
+}
+
+// ── render severity bars ──────────────────────────────────────────────────────
+const SEV_COLORS = { critical:'#ff0040', high:'#ff2d55', medium:'#ff8c00', low:'#39ff14', info:'#00d4ff' };
+const SEV_ORDER  = ['critical','high','medium','low','info'];
+
+function renderSevBars(bySev) {
+  const el  = document.getElementById('sev-bars');
+  const max = Math.max(1, ...Object.values(bySev));
+  el.innerHTML = SEV_ORDER.map(s => {
+    const n = bySev[s] || 0;
+    return `
+      <div class="trap-row">
+        <div class="trap-label" style="color:${SEV_COLORS[s]}">${s.toUpperCase()}</div>
+        <div class="trap-track">
+          <div class="trap-fill" style="width:${Math.round(n/max*100)}%;background:${SEV_COLORS[s]}"></div>
+        </div>
+        <div class="trap-count">${n}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── render geo list ───────────────────────────────────────────────────────────
+function renderGeo(attackers) {
+  const el = document.getElementById('geo-list');
+  const counts = {};
+  attackers.forEach(a => {
+    const c = a.geo?.country || 'Unknown';
+    const code = a.geo?.countryCode || '';
+    if (!counts[c]) counts[c] = { n:0, code };
+    counts[c].n++;
+  });
+  const sorted = Object.entries(counts).sort((a,b) => b[1].n - a[1].n).slice(0,12);
+  if (!sorted.length) { el.innerHTML = '<div class="empty">No geo data yet</div>'; return; }
+  el.innerHTML = sorted.map(([country, {n, code}]) => `
+    <div class="geo-row">
+      <div class="geo-flag">${countryFlag(code)}</div>
+      <div class="geo-country">${country}</div>
+      <div class="geo-count">${n}</div>
+    </div>`).join('');
+}
+
+// ── render event types ────────────────────────────────────────────────────────
+function renderEtypes(etypes) {
+  const el  = document.getElementById('etype-list');
+  const max = Math.max(1, ...etypes.map(e => e.n));
+  if (!etypes.length) { el.innerHTML = '<div class="empty">No events yet</div>'; return; }
+  el.innerHTML = etypes.slice(0,10).map(e => `
+    <div class="etype-row">
+      <div class="etype-name">${e.event_type.replace(/_/g,' ')}</div>
+      <div class="etype-bar-track">
+        <div class="etype-bar-fill" style="width:${Math.round(e.n/max*100)}%"></div>
+      </div>
+      <div class="etype-count">${e.n}</div>
+    </div>`).join('');
+}
+
+// ── main refresh ──────────────────────────────────────────────────────────────
+async function refresh() {
+  try {
+    const [statsR, capsR, atkR, trapR, sevR, etypeR] = await Promise.all([
+      fetch('/api/stats'),
+      fetch('/api/captures?limit=80'),
+      fetch('/api/attackers?limit=15'),
+      fetch('/api/captures/by-trap'),
+      fetch('/api/captures/by-severity'),
+      fetch('/api/captures/by-event-type'),
+    ]);
+
+    const stats    = await statsR.json();
+    const captures = await capsR.json();
+    const atk      = await atkR.json();
+    const byTrap   = await trapR.json();
+    const bySev    = await sevR.json();
+    const etypes   = await etypeR.json();
+
+    document.getElementById('s-total').textContent     = (stats.total_captures || 0).toLocaleString();
+    document.getElementById('s-ips').textContent       = (stats.unique_ips || 0).toLocaleString();
+    document.getElementById('s-high').textContent      = (stats.high_critical || 0).toLocaleString();
+    document.getElementById('s-countries').textContent = Object.keys(stats.countries || {}).length;
+    document.getElementById('s-traps').textContent     = Object.keys(byTrap).length;
+
+    renderFeed(captures);
+    renderAttackers(atk);
+    renderTrapBars(byTrap);
+    renderSevBars(bySev);
+    renderGeo(atk);
+    renderEtypes(etypes);
+    setStatus(true);
+
+  } catch(e) {
+    setStatus(false);
+  }
+}
+
+refresh();
+setInterval(refresh, 4000);
+</script>
+</body>
+</html>

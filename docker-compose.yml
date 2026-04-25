@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  honeynet:
+    build: .
+    container_name: honeynet
+    ports:
+      - "5001:5001"    # dashboard
+      - "2222:2222"    # fake SSH
+      - "8080:8080"    # fake admin panel
+      - "2121:21"      # fake FTP
+      - "2323:23"      # fake Telnet
+      - "33060:3306"   # fake MySQL
+      - "56379:6379"   # fake Redis
+    volumes:
+      - honeynet-data:/app/data
+    environment:
+      - HONEYPOT_DB=/app/data/honeypot.db
+      - RESET_ON_START=false
+      - SSH_TRAP_PORT=2222
+      - HTTP_TRAP_PORT=8080
+      - API_PORT=5001
+    restart: unless-stopped
+volumes:
+  honeynet-data:
