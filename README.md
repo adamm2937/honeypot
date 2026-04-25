@@ -1,4 +1,4 @@
-# 🍯 HoneyNet — Attacker Intelligence Platform
+# 🍯 HoneyNet. Attacker Intelligence Platform
 
 > A multi-trap honeypot system that lures attackers, captures their behaviour in real time, enriches IPs with geolocation and threat intelligence, and displays everything on a live dashboard.
 
@@ -11,9 +11,15 @@
 
 ## What Is a Honeypot?
 
-A honeypot is a deliberately exposed decoy system designed to attract attackers. It has no real users, no real data — its only purpose is to look vulnerable and log everything that interacts with it.
+A honeypot is a deliberately exposed decoy system designed to attract attackers. It has no real users, no real data - its only purpose is to look vulnerable and log everything that interacts with it.
 
 This project deploys multiple traps simultaneously, each simulating a different service, and correlates everything into a unified attacker intelligence dashboard.
+
+---
+
+## Dashbord UI 
+
+<img width="1856" height="970" alt="Screenshot from 2026-04-25 23-57-48" src="https://github.com/user-attachments/assets/82388ef1-1f7d-44a6-9b27-a82e5471d988" />
 
 ---
 
@@ -43,7 +49,7 @@ Internet / Local Network
                          ▼
 ┌────────────────────────────────────────────────────────────┐
 │                   CAPTURE STORE                            │
-│           SQLite — indexed, persistent                     │
+│           SQLite - indexed, persistent                     │
 └──────────┬──────────────────────────┬──────────────────────┘
            │                          │
            ▼                          ▼
@@ -100,22 +106,22 @@ Serves a convincing fake admin panel and captures:
 
 Every captured IP is automatically enriched with:
 
-- **Geolocation** — country, city, ISP (via ip-api.com, free)
-- **ASN detection** — flags known malicious/hosting ASNs (AWS, OVH, DigitalOcean...)
-- **Proxy/VPN detection** — flags Tor exits and VPN endpoints
-- **Threat score** — 0–100 based on behaviour, volume, and origin
+- **Geolocation** - country, city, ISP (via ip-api.com, free)
+- **ASN detection** - flags known malicious/hosting ASNs (AWS, OVH, DigitalOcean...)
+- **Proxy/VPN detection** - flags Tor exits and VPN endpoints
+- **Threat score** - 0-100 based on behaviour, volume, and origin
 - **Attacker classification**:
-  - `Credential Stuffer` — submitting username/password pairs
-  - `Injection Attacker` — SQLi/XSS/path traversal
-  - `Data Harvester` — targeting .env, .git, config files
-  - `Automated Scanner` — hitting many paths/ports systematically
-  - `Port Scanner` — TCP probing across multiple ports
+  - `Credential Stuffer` - submitting username/password pairs
+  - `Injection Attacker` - SQLi/XSS/path traversal
+  - `Data Harvester` - targeting .env, .git, config files
+  - `Automated Scanner` - hitting many paths/ports systematically
+  - `Port Scanner` - TCP probing across multiple ports
 
 ---
 
 ## Dashboard
 
-Live dashboard at `http://localhost:5001` — updates every 4 seconds:
+Live dashboard at `http://localhost:5001` - updates every 4 seconds:
 
 - Real-time capture feed with severity classification
 - Attacker profiles table with threat scores and geo flags
@@ -129,7 +135,6 @@ Live dashboard at `http://localhost:5001` — updates every 4 seconds:
 ## Quick Start
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/honeynet
 cd honeynet
 python3 -m venv venv
 source venv/bin/activate
@@ -157,13 +162,13 @@ curl "http://localhost:8080/search?q=../../etc/passwd"
 
 ## SIEM-Lite Integration
 
-HoneyNet exports a SIEM-compatible event feed at `/api/siem-feed`. Point your SIEM-Lite JSON ingester at this endpoint to see real honeypot captures flowing into the SIEM dashboard automatically — closing the loop between deception, detection, and response.
+HoneyNet exports a SIEM-compatible event feed at `/api/siem-feed`. Point your SIEM-Lite JSON ingester at this endpoint to see real honeypot captures flowing into the SIEM dashboard automatically - closing the loop between deception, detection, and response.
 
 ---
 
-## Legal Notice
+## Important Note
 
-This honeypot is designed to run on **systems you own**. Deploying it on your own machine or VM is completely legal — attackers who connect do so uninvited. Never deploy on systems you do not own or without explicit authorisation.
+This honeypot has been created and tested on my own machine using other local Vms. It can and has already been tested in the real world. the deployment just differs a tad bit between local and international execution. 
 
 ---
 
@@ -192,15 +197,11 @@ honeynet/
 
 ## Tech Stack
 
-- **Python 3.12 asyncio** — concurrent trap handling (thousands of connections)
-- **aiohttp** — async HTTP trap server
-- **Flask** — REST API and dashboard server
-- **SQLite** — zero-dependency persistent capture storage
-- **ip-api.com** — free geolocation API (no key required)
-- **Docker** — one-command deployment
+- **Python 3.12 asyncio** - concurrent trap handling (thousands of connections)
+- **aiohttp** - async HTTP trap server
+- **Flask** - REST API and dashboard server
+- **SQLite** - zero-dependency persistent capture storage
+- **ip-api.com** - free geolocation API (no key required)
+- **Docker** - one-command deployment
 
 ---
-
-## License
-
-MIT — educational use, research, and personal lab environments.
