@@ -2,11 +2,6 @@
 
 > A multi-trap honeypot system that lures attackers, captures their behaviour in real time, enriches IPs with geolocation and threat intelligence, and displays everything on a live dashboard.
 
-![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python)
-![asyncio](https://img.shields.io/badge/asyncio-concurrent-green?style=flat-square)
-![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-
 ---
 
 ## What Is a Honeypot?
