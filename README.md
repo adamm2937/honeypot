@@ -1,4 +1,4 @@
-# 🍯 HoneyNet. Attacker Intelligence Platform
+# 🍯 HoneyPot. Attacker Intelligence Platform
 
 > A multi-trap honeypot system that lures attackers, captures their behaviour in real time, enriches IPs with geolocation and threat intelligence, and displays everything on a live dashboard.
 
